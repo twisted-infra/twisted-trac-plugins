@@ -23,23 +23,6 @@ class IRCTicketObserver(Component):
             ticket.values['summary']])
 
 
-<<<<<<< .mine
-    def change_keyword(self, ticket, author, comment, old_values):
-        if 'review' in ticket.values['keywords'] and 'review' not in old_values['keywords']:
-            subprocess.call([
-                TICKET,
-                TRACKER,
-                str(ticket.id)
-
-
-    def ticket_changed(self, ticket, author, comment, old_values):
-        for field in old_values:
-            if ticket.values[field] != old_values[field]:
-                changeMethod = getattr(self, 'change_' + field, None)
-                if changeMethod is not None:
-                    changeMethod(ticket, author, comment, old_values)
-
-=======
     def ticket_changed(self, ticket, comment, author, old_values):
         messages = []
         old = old_values.get('keywords', None)
@@ -74,4 +57,3 @@ class IRCTicketObserver(Component):
                                  'summary': ticket.values['summary']}
                             for m in messages])])
 
->>>>>>> .r14202
