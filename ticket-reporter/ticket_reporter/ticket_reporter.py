@@ -57,3 +57,7 @@ class IRCTicketObserver(Component):
                                  'summary': ticket.values['summary']}
                             for m in messages])])
 
+
+
+    def ticket_deleted(self, ticket):
+        pass
