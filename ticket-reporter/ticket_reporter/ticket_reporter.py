@@ -4,18 +4,13 @@ import subprocess
 from trac.core import Component, implements
 from trac.ticket.api import ITicketChangeListener
 
-TICKET = '/home/trac/Projects/Divmod/sandbox/exarkun/commit-bot/ticket'
-MESSAGE = '/home/trac/Projects/Divmod/sandbox/exarkun/commit-bot/message'
-TRACKER = 'http://twistedmatrix.com/trac/'
-CHANNEL = '#twisted'
-
 class IRCTicketObserver(Component):
     implements(ITicketChangeListener)
 
     def ticket_created(self, ticket):
         subprocess.call([
-            TICKET,
-            TRACKER,
+            self.config.get('ticket-reporter', 'ticket_executable'),
+            self.config.get('ticket-reporter', 'tracker_location'),
             str(ticket.id),
             ticket.values['reporter'],
             ticket.values['type'],
@@ -48,8 +43,8 @@ class IRCTicketObserver(Component):
             if ticket.values['owner']:
                 assignee = 'assigned to ' + ticket.values['owner']
             subprocess.call([
-                    MESSAGE,
-                    CHANNEL,
+                    self.config.get('ticket-reporter', 'message_executable'),
+                    self.config.get('ticket-reporter', 'report_channel'),
                     '.  '.join([
                             m % {'author': author,
                                  'ticket': ticket.id,
