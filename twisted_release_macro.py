@@ -2,11 +2,8 @@
 Trac macros for Twisted.
 """
 
-from glob import glob
 from StringIO import StringIO
-from urlparse import urlparse, ParseResult
-
-from genshi.builder import tag
+from urlparse import urlparse
 
 from trac.util.html import Markup
 from trac.wiki.formatter import OneLinerFormatter
