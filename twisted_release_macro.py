@@ -6,8 +6,10 @@ from glob import glob
 from StringIO import StringIO
 from urlparse import urlparse, ParseResult
 
+from genshi.builder import tag
+
 from trac.util.html import Markup
-from trac.wiki import Formatter
+from trac.wiki.formatter import OneLinerFormatter
 from trac.wiki.macros import WikiMacroBase
 
 from twisted.python.versions import Version
@@ -73,7 +75,7 @@ class ProjectVersionMacro(WikiMacroBase):
         @param name: the actual name of the macro
         @param args: the text enclosed in parenthesis at the call of the macro.
           Note that if there are ''no'' parenthesis (like in, e.g.
-          [[TwistedVersion]]), then `args` is `None`.
+          [[ProjectVersion]]), then `args` is `None`.
         """
         v = self.getVersion()
 
@@ -89,7 +91,6 @@ class ProjectVersionMacro(WikiMacroBase):
                 text = "[%s]" % text
 
         out = StringIO()
-        Formatter(self.env, formatter.context).format(text, out)
+        OneLinerFormatter(self.env, formatter.context).format(text, out)
 
         return Markup(out.getvalue())
-
