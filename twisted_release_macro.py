@@ -14,7 +14,39 @@ from twisted.python.versions import Version
 from twisted.python.filepath import FilePath
 
 
-RELEASES = FilePath('/srv/www-data/twisted/Releases/')
+
+class VersionInformation(object):
+    """
+    C{dict}-alike providing values for interpolation into a format string, which
+    support for lazy calculation of an md5 sum.
+    """
+    def __init__(self, format, version, md5sums):
+        self.format = format
+        self.version = version
+        self.md5sums = md5sums
+
+
+    def __getitem__(self, name):
+        if name == 'md5':
+            return self._md5()
+        elif name == 'base':
+            return self.version.base()
+        try:
+            return getattr(self.version, name)
+        except AttributeError:
+            raise KeyError(name)
+
+
+    def _md5(self):
+        sep = '-----BEGIN PGP SIGNATURE-----\n'
+        lines = self.md5sums.open().readlines()
+        path = urlparse(self.format).path % dict(base=self.version.base())
+        filename = path.split('/')[-1]
+        for entry in lines[3:lines.index(sep)]:
+            entry = entry.rstrip('\n').split('  ')
+            if entry[1] == filename:
+                return entry[0]
+        return ''
 
 
 
@@ -69,6 +101,7 @@ class ProjectVersionMacro(WikiMacroBase):
     [[ProjectVersion(source:/tags/releases/twisted-%(base)s/ Tag for Twisted %(base)s)]]
     """
 
+    RELEASES = FilePath('/srv/www-data/twisted/Releases/')
 
     revision = "$Rev$"
     url = "$URL$"
@@ -76,7 +109,7 @@ class ProjectVersionMacro(WikiMacroBase):
     def getVersion(self):
         versions = []
         pattern = 'twisted-%s-md5sums.txt'
-        for md5sums in RELEASES.globChildren(pattern % '*'):
+        for md5sums in self.RELEASES.globChildren(pattern % '*'):
             try:
                 components = map(int, md5sums.basename().split('-')[1].split('.'))
             except ValueError:
@@ -85,8 +118,33 @@ class ProjectVersionMacro(WikiMacroBase):
                 versions.append(components)
 
         version = Version('Twisted', *max(versions))
-        md5sums_file = RELEASES.child(pattern % version.base())
+        md5sums_file = self.RELEASES.child(pattern % version.base())
         return version, md5sums_file
+
+
+    def _expandText(self, args):
+        if not self.RELEASES.exists():
+            self.log.error(
+                "The specified RELEASES directory does not exist at %s" % (
+                    self.RELEASES.path,))
+            raise TracError("Error loading Twisted version information")
+
+        v, md5sums = self.getVersion()
+
+        if args is None:
+            text = v.base()
+        else:
+            uc = unicode(args).replace('%28', '(').replace('%29', ')')
+            values = VersionInformation(uc, v, md5sums)
+            if uc.find('%(md5)s') > -1:
+                pass
+            url = urlparse(uc).netloc
+            text = uc % values
+
+            # handle links
+            if args.startswith('source:') or url != '':
+                text = "[%s]" % (text,)
+        return text
 
 
     def expand_macro(self, formatter, name, args):
@@ -98,35 +156,7 @@ class ProjectVersionMacro(WikiMacroBase):
           Note that if there are ''no'' parenthesis (like in, e.g.
           [[ProjectVersion]]), then `args` is `None`.
         """
-        if not RELEASES.exists():
-            self.log.error("The specified RELEASES directory does not exist at %s" % RELEASES.path)
-            raise TracError("Error loading Twisted version information")
-
-        v, md5sums = self.getVersion()        
-        md5sum = ''
-
-        if args is None:
-            text = v.base()
-        else:
-            uc = unicode(args).replace('%28', '(').replace('%29', ')')
-            if uc.find('%(md5)s') > -1:
-                sep = '-----BEGIN PGP SIGNATURE-----\n'
-                lines = md5sums.open().readlines()
-                path = urlparse(uc).path % dict(base=v.base())
-                filename = path.split('/')[-1]
-                for entry in lines[3:lines.index(sep)]:
-                    entry = entry.rstrip('\n').split('  ')
-                    if entry[1] == filename:
-                        md5sum = entry[0]
-                        break
-
-            url = urlparse(uc).netloc
-            text = uc % dict(major=v.major, minor=v.minor, micro=v.micro, base=v.base(),
-                             md5=md5sum)
-
-            # handle links
-            if args.startswith('source:') or url != '':
-                text = "[%s]" % text
+        text = self._expandText(args)
 
         out = StringIO()
         OneLinerFormatter(self.env, formatter.context).format(text, out)
