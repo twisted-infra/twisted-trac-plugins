@@ -1,5 +1,8 @@
+# Copyright (c) Twisted Matrix Laboratories.
+# See LICENSE for details.
+
 """
-Trac macros for Twisted.
+Trac macros for the Twisted website.
 """
 
 from StringIO import StringIO
@@ -15,9 +18,15 @@ from twisted.python.filepath import FilePath
 
 
 
+author = "Twisted Matrix Laboratories" 
+revision = "0.1"
+url = "$URL: https://launchpad.net/twisted-trac-integration $"
+license = "MIT"
+
+
 class VersionInformation(object):
     """
-    C{dict}-alike providing values for interpolation into a format string, which
+    C{dict}-alike providing values for interpolation into a format string, with
     support for lazy calculation of an md5 sum.
     """
     def __init__(self, format, version, md5sums):
@@ -38,9 +47,14 @@ class VersionInformation(object):
 
 
     def _md5(self):
+        """
+        @rtype: C{str}
+        """
         sep = '-----BEGIN PGP SIGNATURE-----\n'
         lines = self.md5sums.open().readlines()
-        path = urlparse(self.format).path % dict(base=self.version.base())
+        path = urlparse(self.format).path % dict(major=self.version.major,
+            minor=self.version.minor, micro=self.version.micro,
+            base=self.version.base(), md5="")
         filename = path.split('/')[-1]
         for entry in lines[3:lines.index(sep)]:
             entry = entry.rstrip('\n').split('  ')
@@ -103,9 +117,6 @@ class ProjectVersionMacro(WikiMacroBase):
 
     RELEASES = FilePath('/srv/www-data/twisted/Releases/')
 
-    revision = "$Rev$"
-    url = "$URL$"
-
     def getVersion(self):
         versions = []
         pattern = 'twisted-%s-md5sums.txt'
@@ -116,8 +127,14 @@ class ProjectVersionMacro(WikiMacroBase):
                 pass
             else:
                 versions.append(components)
+        try:
+            version = Version('Twisted', *max(versions))
+        except ValueError:
+            self.log.error(
+                "Could not parse a version from files in the RELEASES directory %s" % (
+                self.RELEASES.path,))
+            raise TracError("Error loading Twisted version information")
 
-        version = Version('Twisted', *max(versions))
         md5sums_file = self.RELEASES.child(pattern % version.base())
         return version, md5sums_file
 
@@ -126,18 +143,23 @@ class ProjectVersionMacro(WikiMacroBase):
         if not self.RELEASES.exists():
             self.log.error(
                 "The specified RELEASES directory does not exist at %s" % (
-                    self.RELEASES.path,))
+                self.RELEASES.path,))
             raise TracError("Error loading Twisted version information")
 
-        v, md5sums = self.getVersion()
+        version, md5sums = self.getVersion()
 
         if args is None:
-            text = v.base()
+            text = version.base()
         else:
             uc = unicode(args).replace('%28', '(').replace('%29', ')')
-            values = VersionInformation(uc, v, md5sums)
-            if uc.find('%(md5)s') > -1:
-                pass
+            values = VersionInformation(uc, version, md5sums)
+
+            if uc.find('%(md5)s') > -1 and values['md5'] == '':
+                self.log.warn(
+                    "Could not find a matching hexdigest for %s" % (
+                    version.base(),))
+                raise TracError("Error loading Twisted version information")
+
             url = urlparse(uc).netloc
             text = uc % values
 
