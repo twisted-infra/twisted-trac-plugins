@@ -42,15 +42,16 @@ class IRCTicketObserver(Component):
             assignee = 'unassigned'
             if ticket.values['owner']:
                 assignee = 'assigned to ' + ticket.values['owner']
-            subprocess.call([
-                    self.config.get('ticket-reporter', 'message_executable'),
-                    self.config.get('ticket-reporter', 'report_channel'),
-                    '.  '.join([
-                            m % {'author': author,
-                                 'ticket': ticket.id,
-                                 'assignee': assignee,
-                                 'summary': ticket.values['summary']}
-                            for m in messages])])
+            executable = self.config.get('ticket-reporter', 'message_executable')
+            channels = self.config.get('ticket-reporter', 'report_channel').split(',')
+            message = '.  '.join([
+                    m % {'author': author,
+                         'ticket': ticket.id,
+                         'assignee': assignee,
+                         'summary': ticket.values['summary']}
+                    for m in messages])
+            for channel in channels:
+                subprocess.call([executable, channel, message])
 
 
 
