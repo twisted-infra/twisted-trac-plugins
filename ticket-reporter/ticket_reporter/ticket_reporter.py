@@ -43,7 +43,7 @@ class IRCTicketObserver(Component):
             if ticket.values['owner']:
                 assignee = 'assigned to ' + ticket.values['owner']
             executable = self.config.get('ticket-reporter', 'message_executable')
-            channels = self.config.get('ticket-reporter', 'report_channel').split(',')
+            channels = self.config.get('ticket-reporter', 'report_channels').split(',')
             message = '.  '.join([
                     m % {'author': author,
                          'ticket': ticket.id,
