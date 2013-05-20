@@ -38,17 +38,32 @@ Ticket %(ticket_summary)r changed by %(changer_name)s <%(changer_email)s>:
 """ + TICKET_TRAILER
 
 
-class EmailTicketObserver(Component):
-    implements(ITicketChangeListener)
+def flattenMessage(msg):
+    s = StringIO.StringIO()
+    g = email.Generator.Generator(s)
+    g.flatten(msg)
+    return s.getvalue()
+
+
+def sendmail(to, msg):
+    cmd = ["/usr/sbin/sendmail"] + list(to)
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    # RFC 821, section 4.5.2.
+    proc.stdin.write(msg.replace('\n.\n', '\n..\n'))
+    proc.stdin.close()
+    proc.wait()
+
+
+class EmailGenerator(object):
 
     requireEmail = False
 
+    def __init__(self, cursor):
+        self.cursor = cursor
+
     def ticketVars(self, ticket):
-        c = self.env.get_db_cnx().cursor()
-        c.execute("SELECT email FROM user_database WHERE username = %s", (ticket.values['reporter'],))
-        for email, in c:
-            break
-        else:
+        email = self.emailForUsername(ticket.values['reporter'])
+        if email is None:
             if self.requireEmail:
                 raise RuntimeError("Visit the 'User Configuration' page and enter an email address before you create a ticket.")
             else:
@@ -70,22 +85,6 @@ class EmailTicketObserver(Component):
         }
 
 
-    def flattenMessage(self, msg):
-        s = StringIO.StringIO()
-        g = email.Generator.Generator(s)
-        g.flatten(msg)
-        return s.getvalue()
-
-
-    def sendmail(self, to, msg):
-        cmd = ["/usr/sbin/sendmail"] + list(to)
-        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-        # RFC 821, section 4.5.2.
-        proc.stdin.write(msg.replace('\n.\n', '\n..\n'))
-        proc.stdin.close()
-        proc.wait()
-
-
     def baseMessage(self, ticket):
         info = self.ticketVars(ticket)
         mm = email.Message.Message()
@@ -104,12 +103,8 @@ class EmailTicketObserver(Component):
 
 
     def ticketChangeMessage(self, cc, ticket, author, comment, oldValues):
-        cursor = self.env.get_db_cnx().cursor()
-        cursor.execute("SELECT email FROM user_database WHERE username = %s", (author,))
-        try:
-            [email] = iter(cursor).next()
-        except StopIteration:
-            email = author
+        email = self.emailForUsername(author) or author
+
         info, mm = self.baseMessage(ticket)
         mm['To'] = ', '.join(cc)
         mm['Subject'] = author + ' changed ' + repr(info['ticket_summary'])
@@ -148,7 +143,7 @@ class EmailTicketObserver(Component):
         return usernames
 
 
-    def emailForUsername(self, cursor, username):
+    def emailForUsername(self, username):
         """
         Return the email address for the given username, as present in the
         user_database table.
@@ -161,8 +156,8 @@ class EmailTicketObserver(Component):
         @return: The email address for the given user as a string, or
         C{None} if they do not have one.
         """
-        cursor.execute('SELECT email FROM user_database WHERE username = %s', (username,))
-        results = list(cursor)
+        self.cursor.execute('SELECT email FROM user_database WHERE username = %s', (username,))
+        results = list(self.cursor)
         if len(results) == 0:
             return None
         if results[0][0]:
@@ -170,22 +165,26 @@ class EmailTicketObserver(Component):
         return None
 
 
+class EmailTicketObserver(Component):
+    implements(ITicketChangeListener)
+
     # ITicketObserver
     def ticket_created(self, ticket):
-        self.sendmail(
+        gen = EmailGenerator(self.env.get_db_cnx().cursor())
+
+        sendmail(
             [LIST_ADDRESS],
-            self.flattenMessage(self.ticketAddedMessage(ticket)))
+            flattenMessage(gen.ticketAddedMessage(ticket)))
 
 
     def ticket_changed(self, ticket, comment, author, old_values):
-        usernames = self.interestedParties(ticket)
+        gen = EmailGenerator(self.env.get_db_cnx().cursor())
 
-        db = self.env.get_db_cnx()
-        cursor = db.cursor()
+        usernames = gen.interestedParties(ticket)
 
-        emails = filter(None, [self.emailForUsername(cursor, u) for u in usernames])
+        emails = filter(None, [gen.emailForUsername(u) for u in usernames])
 
         if emails:
-            self.sendmail(
+            sendmail(
                 emails,
-                self.flattenMessage(self.ticketChangeMessage(emails, ticket, author, comment, old_values)))
+                flattenMessage(gen.ticketChangeMessage(emails, ticket, author, comment, old_values)))
