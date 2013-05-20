@@ -163,7 +163,8 @@ class EmailTicketObserver(Component):
 
     def _send(self, to, msg):
         from twisted.internet import reactor
-        reactor.callFromThread(smtp.sendmail, 'localhost', AGENT_ADDRESS, to, msg)
+        reactor.callFromThread(smtp.sendmail, 'localhost', AGENT_ADDRESS, to,
+                               flattenMessage(msg))
 
     # ITicketObserver
     def ticket_created(self, ticket):
@@ -171,7 +172,7 @@ class EmailTicketObserver(Component):
 
         self._send(
             [LIST_ADDRESS],
-            flattenMessage(gen.ticketAddedMessage(ticket)))
+            gen.ticketAddedMessage(ticket))
 
 
     def ticket_changed(self, ticket, comment, author, old_values):
@@ -184,4 +185,4 @@ class EmailTicketObserver(Component):
         if emails:
             self._send(
                 emails,
-                flattenMessage(gen.ticketChangeMessage(emails, ticket, author, comment, old_values)))
+                gen.ticketChangeMessage(emails, ticket, author, comment, old_values))
