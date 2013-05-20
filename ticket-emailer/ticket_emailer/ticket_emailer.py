@@ -1,8 +1,10 @@
 
-import subprocess, StringIO, email.Message, email.MIMEText, email.Generator, email.Utils
+import StringIO, email.Message, email.MIMEText, email.Generator, email.Utils
 
 from trac.core import Component, implements
 from trac.ticket.api import ITicketChangeListener
+
+from twisted.mail import smtp
 
 LIST_ADDRESS = "twisted-bugs@twistedmatrix.com"
 AGENT_ADDRESS = "trac@twistedmatrix.com"
@@ -43,15 +45,6 @@ def flattenMessage(msg):
     g = email.Generator.Generator(s)
     g.flatten(msg)
     return s.getvalue()
-
-
-def sendmail(to, msg):
-    cmd = ["/usr/sbin/sendmail"] + list(to)
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-    # RFC 821, section 4.5.2.
-    proc.stdin.write(msg.replace('\n.\n', '\n..\n'))
-    proc.stdin.close()
-    proc.wait()
 
 
 class EmailGenerator(object):
@@ -168,11 +161,15 @@ class EmailGenerator(object):
 class EmailTicketObserver(Component):
     implements(ITicketChangeListener)
 
+    def _send(self, to, msg):
+        from twisted.internet import reactor
+        reactor.callFromThread(smtp.sendmail, 'localhost', AGENT_ADDRESS, to, msg)
+
     # ITicketObserver
     def ticket_created(self, ticket):
         gen = EmailGenerator(self.env.get_db_cnx().cursor())
 
-        sendmail(
+        self._send(
             [LIST_ADDRESS],
             flattenMessage(gen.ticketAddedMessage(ticket)))
 
@@ -185,6 +182,6 @@ class EmailTicketObserver(Component):
         emails = filter(None, [gen.emailForUsername(u) for u in usernames])
 
         if emails:
-            sendmail(
+            self._send(
                 emails,
                 flattenMessage(gen.ticketChangeMessage(emails, ticket, author, comment, old_values)))
