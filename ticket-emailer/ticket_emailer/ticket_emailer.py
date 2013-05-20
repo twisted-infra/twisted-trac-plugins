@@ -4,9 +4,6 @@ import subprocess, StringIO, email.Message, email.MIMEText, email.Generator, ema
 from trac.core import Component, implements
 from trac.ticket.api import ITicketChangeListener
 
-TICKET = '/home/trac/Projects/Divmod/sandbox/exarkun/commit-bot/ticket'
-TRACKER = 'http://divmod.org/trac/'
-
 LIST_ADDRESS = "twisted-bugs@twistedmatrix.com"
 AGENT_ADDRESS = "trac@twistedmatrix.com"
 REPLY_ADDRESS = "twisted-python@twistedmatrix.com"
