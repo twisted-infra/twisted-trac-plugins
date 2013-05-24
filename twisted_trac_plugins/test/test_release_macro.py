@@ -10,7 +10,7 @@ from twisted.trial.unittest import TestCase
 
 from trac.core import ComponentManager, TracError
 
-from twisted_release_macro import ProjectVersionMacro
+from twisted_trac_plugins.release_macro import ProjectVersionMacro
 
 
 
