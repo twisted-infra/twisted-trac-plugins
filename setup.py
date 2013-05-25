@@ -4,7 +4,6 @@ setup(
     entry_points={
         'trac.plugins': [
             "ticket-reporter = twisted_trac_plugins.ticket_reporter",
-            "ticket-emailer = twisted_trac_plugins.ticket_emailer",
             ],
         },
     name='Twisted Trac Plugins', version='0.0',
