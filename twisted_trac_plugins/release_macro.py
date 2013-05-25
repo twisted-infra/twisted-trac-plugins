@@ -115,7 +115,7 @@ class ProjectVersionMacro(WikiMacroBase):
     [[ProjectVersion(source:/tags/releases/twisted-%(base)s/ Tag for Twisted %(base)s)]]
     """
 
-    RELEASES = FilePath('/srv/www-data/twisted/Releases/')
+    RELEASES = FilePath('/srv/t-web/data/releases/')
 
     def getVersion(self):
         versions = []
