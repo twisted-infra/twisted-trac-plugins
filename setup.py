@@ -3,6 +3,7 @@ from setuptools import setup
 setup(
     entry_points={
         'trac.plugins': [
+            "release-macro = twisted_trac_plugins.release_macro",
             "ticket-reporter = twisted_trac_plugins.ticket_reporter",
             ],
         },
