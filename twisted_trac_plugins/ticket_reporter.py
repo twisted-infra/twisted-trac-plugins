@@ -25,19 +25,19 @@ class IRCTicketObserver(Component):
             new = ticket.values['keywords']
             if 'review' in old and 'review' not in new:
                 # It was up for review, now it isn't
-                messages.append('%(author)s reviewed [#%(ticket)d] - %(summary)s (%(assignee)s)')
+                messages.append('%(author)s reviewed [https://tm.tl/#%(ticket)d] - %(summary)s (%(assignee)s)')
             elif 'review' in new and 'review' not in old:
                 # It is up for review, and it wasn't before
-                messages.append('%(author)s submitted [#%(ticket)d] - %(summary)s (%(assignee)s) for review')
+                messages.append('%(author)s submitted [https://tm.tl/#%(ticket)d] - %(summary)s (%(assignee)s) for review')
         old = old_values.get('status', None)
         if old is not None:
             new = ticket.values['status']
             if old != 'closed' and new == 'closed':
                 # It wasn't closed, now it is.
-                messages.append('%(author)s closed [#%(ticket)d] - %(summary)s')
+                messages.append('%(author)s closed [https://tm.tl/#%(ticket)d] - %(summary)s')
             elif old == 'closed' and new != 'closed':
                 # It was closed, now it isn't.
-                messages.append('%(author)s re-opened [#%(ticket)d] - %(summary)s')
+                messages.append('%(author)s re-opened [https://tm.tl/#%(ticket)d] - %(summary)s')
         if messages is not None:
             assignee = 'unassigned'
             if ticket.values['owner']:
