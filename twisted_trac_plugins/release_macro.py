@@ -20,7 +20,7 @@ from twisted.python.filepath import FilePath
 
 author = "Twisted Matrix Laboratories" 
 revision = "0.1"
-url = "$URL: https://launchpad.net/twisted-trac-integration $"
+url = "$URL: https://github.com/twisted-infra/twisted-trac-plugins $"
 license = "MIT"
 
 

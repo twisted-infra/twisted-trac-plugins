@@ -2,7 +2,7 @@
 # See LICENSE for details.
 
 """
-Tests for the C{twisted_release_macro}.
+Tests for the C{release_macro}.
 """
 
 from twisted.python.filepath import FilePath
