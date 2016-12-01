@@ -61,15 +61,6 @@ class CommitTicketUpdater(Component):
     This component hooks into changeset notifications and searches commit
     messages for text in the form of:
     {{{
-    command #1
-    command #1, #2
-    command #1 & #2
-    command #1 and #2
-    }}}
-
-    Instead of the short-hand syntax "#1", "ticket:1" can be used as well,
-    e.g.:
-    {{{
     command ticket:1
     command ticket:1, ticket:2
     command ticket:1 & ticket:2
@@ -101,8 +92,8 @@ class CommitTicketUpdater(Component):
     A fairly complicated example of what you can do is with a commit message
     of:
 
-        Changed blah and foo to do this or that. Fixes #10 and #12,
-        and refs #12.
+        Changed blah and foo to do this or that. Fixes ticket:10 and ticket:12,
+        and refs ticket:12.
 
     This will close #10 and #12, and add a note to #12.
     """
@@ -137,7 +128,7 @@ class CommitTicketUpdater(Component):
     notify = BoolOption('ticket', 'commit_ticket_update_notify', 'true',
         """Send ticket change notification when updating a ticket.""")
 
-    ticket_prefix = '(?:#|(?:ticket|issue|bug)[: ]?)'
+    ticket_prefix = '(?:ticket:)'
     ticket_reference = ticket_prefix + \
                        '[0-9]+(?:#comment:([0-9]+|description))?'
     ticket_command = (r'(?P<action>[A-Za-z]*)\s*.?\s*'
