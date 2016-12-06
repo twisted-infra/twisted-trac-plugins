@@ -8,10 +8,11 @@ setup(
         'trac.plugins': [
             "release-macro = twisted_trac_plugins.release_macro",
             "ticket-reporter = twisted_trac_plugins.ticket_reporter",
+            "LessCommitTicketUpdater = twisted_trac_plugins.commit_updater",
             ],
         },
     name='Twisted Trac Plugins',
-    version='0.1',
+    version='0.2',
     description="Plugins for twisted's trac instance",
     author="Tom Prince",
     author_email="tomprince@twistedmatrix.com",
