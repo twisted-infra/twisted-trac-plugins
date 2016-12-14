@@ -35,8 +35,11 @@
 # IN THE SOFTWARE.
 # ----------------------------------------------------------------------------
 
+import re
+
 from tracopt.ticket.commit_updater import CommitTicketUpdater
 
 class LessCommitTicketUpdater(CommitTicketUpdater):
     ticket_prefix = '(?:ticket:)'
     ticket_reference = ticket_prefix + '[0-9]+'
+    ticket_re = re.compile(ticket_prefix + '([0-9]+)')
